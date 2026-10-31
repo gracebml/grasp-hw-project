@@ -1,11 +1,3 @@
-"""Split and text adapter for the official LGD loader.
-
-``PaperSplitDataset`` subclasses the official ``GraspAnywhereDataset`` and only replaces the list of grasp files it
-iterates over and, with ``text="instruction"`` (default), the text it returns: the GA++ grasp instruction of the
-part instead of the object name. Reading images, grasp labels and the scene description stays the official code.
-The CROG variant additionally normalises the image with CLIP's mean/std and, for training only, appends the GA
-object mask to the targets.
-"""
 from __future__ import annotations
 
 import glob
@@ -19,7 +11,7 @@ from . import refs
 DATASET_NAME = "grasp-anything++-paper"
 TEXTS = ("instruction", "object")  # GA++ grasp instruction | official get_prompts
 CROG_DATASET_NAME = "grasp-anything++-paper-clipnorm"
-# CLIP normalisation as in CROG utils/dataset.py:125-127
+# CLIP normalisation, as in CROG
 CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
@@ -40,8 +32,7 @@ def read_keys(path: str | os.PathLike) -> list[str]:
 
 
 def object_key(grasp_file: str) -> str:
-    """``.../<scene>_<obj>_<part>.pt`` -> ``<scene>_<obj>``, the same slicing as the official filter
-    (``grasp_anywhere_data.py:38``)."""
+    """``.../<scene>_<obj>_<part>.pt`` -> ``<scene>_<obj>``, as the official filter."""
     return os.path.basename(grasp_file)[:-5]
 
 
@@ -52,13 +43,12 @@ def select_grasp_files(add_file_path: str, keys) -> list[str]:
 
 
 def object_mask_file(mask_dir: str, grasp_file: str) -> str:
-    """GA object mask of a grasp file: ``<mask_dir>/<scene>_<obj>.npy``."""
+    """``<mask_dir>/<scene>_<obj>.npy``."""
     return os.path.join(mask_dir, object_key(grasp_file) + ".npy")
 
 
 def instruction_file(instruction_dir: str, grasp_file: str) -> str:
-    """GA++ grasp instruction of a grasp file: ``<instruction_dir>/<scene>_<obj>_<part>.pkl``, the path the official
-    ``get_prompts`` builds (``grasp_anywhere_data.py:126-128``) before its reading lines are commented out."""
+    """``<instruction_dir>/<scene>_<obj>_<part>.pkl``, the path the official ``get_prompts`` builds."""
     return os.path.join(instruction_dir, os.path.basename(grasp_file).split(".")[0] + ".pkl")
 
 
@@ -82,7 +72,6 @@ def make_dataset_class(split_file: str | os.PathLike, text: str = "instruction")
         SPLIT_FILE = str(split_file)
 
         def __init__(self, file_path, ds_rotate=0, **kwargs):
-            # The official constructor sets every path attribute; it reads split/... relative to the cwd.
             with refs.lgd_cwd():
                 super().__init__(file_path, ds_rotate=ds_rotate, **kwargs)
             self.grasp_files = select_grasp_files(kwargs["add_file_path"], keys)
@@ -100,14 +89,8 @@ def make_dataset_class(split_file: str | os.PathLike, text: str = "instruction")
 
 
 def make_crog_dataset_class(split_file: str | os.PathLike, mask_dir: str | None = None, text: str = "instruction"):
-    """CROG variant of ``PaperSplitDataset``.
-
-    - ``get_rgb`` returns the same pixels as the official one (same rotate/zoom/resize) normalised with CLIP's
-      mean/std instead of "/255 minus the image mean";
-    - with ``mask_dir`` (training only) the targets get a 5th entry, the GA object mask under the same rotate/zoom/resize
-      as the image. Validation and test never pass ``mask_dir``. 423 labelled train keys have no mask in GA's mask.zip:
-      they get a mask of -1 (``has_object_mask`` is False) and are left out of CROG's training sampler.
-    """
+    """CROG variant: CLIP normalisation and, with ``mask_dir`` (training only), the object mask as a 5th target. Keys
+    without a mask get -1 and are left out of CROG's training."""
     import numpy as np
     from utils.dataset_processing import image
 
@@ -129,7 +112,7 @@ def make_crog_dataset_class(split_file: str | os.PathLike, mask_dir: str | None 
             if not self.has_object_mask(idx):
                 return np.full((1, self.output_size, self.output_size), -1.0, dtype=np.float32)
             m = image.Image(np.load(object_mask_file(mask_dir, self.grasp_files[idx])).astype(np.float32))
-            # the transforms of the official get_rgb (grasp_anywhere_data.py get_rgb), in the same order
+            # the transforms of the official get_rgb, in the same order
             m.rotate(rot)
             m.zoom(zoom)
             m.resize((self.output_size, self.output_size))
@@ -148,15 +131,8 @@ def make_crog_dataset_class(split_file: str | os.PathLike, mask_dir: str | None 
 
 def make_gpuaug_dataset_class(split_file: str | os.PathLike, mask_dir: str | None = None, text: str = "instruction",
                               other_object: bool = False):
-    """``PaperSplitDataset`` for GPU augmentation.
-
-    The official ``__getitem__`` still draws ``rot``/``zoom`` and builds the grasp targets with the official
-    ``get_gtbb``/``draw``; only ``get_rgb`` returns the raw 416x416 uint8 image, which ``gpuaug.GPUAugLoader`` rotates, zooms,
-    resizes and normalises on the GPU with the returned ``rot``/``zoom``. With ``mask_dir`` (CROG training) the raw
-    GA object mask is appended to the targets (-1 everywhere when the key has no mask). With ``other_object`` (the OT
-    loss of GRAT) the quality map of ANOTHER object of the image comes last (official ``get_gtbb`` and ``draw`` with the
-    sample's ``rot``/``zoom``, different GT grasps, inside the sample's pool of ``split_pools``; zeros if there is none).
-    """
+    """Dataset for ``gpuaug``: ``get_rgb`` returns the raw 416 x 416 image, augmented later on the GPU. ``mask_dir`` adds
+    CROG's object mask; ``other_object`` adds the quality map of another object of the image (GRAT's OT loss)."""
     import hashlib
     import re
 
@@ -168,8 +144,7 @@ def make_gpuaug_dataset_class(split_file: str | os.PathLike, mask_dir: str | Non
 
     class GPUAugSplitDataset(base):
         def get_rgb(self, idx, rot=0, zoom=1.0, normalise=True):
-            # the file the official get_rgb reads (grasp_anywhere_data.py get_rgb), untouched: 416x416x3 uint8;
-            # the official one always ends with resize(output_size), so it cannot be reused here
+            # the file the official get_rgb reads, before its resize
             rgb_file = re.sub(r"_\d{1}_\d{1}\.pt", ".jpg", self.grasp_files[idx]).split('/')[-1]
             return image.Image.from_file(os.path.join(self.rgb_dir, rgb_file)).img
 
@@ -197,8 +172,7 @@ def make_gpuaug_dataset_class(split_file: str | os.PathLike, mask_dir: str | Non
             return self._digest[idx]
 
         def partner(self, idx):
-            """The next file of the same image within the pool (cyclic) that belongs to another object and whose GT grasps
-            DIFFER from the sample's, or None."""
+            """The next file of the same image and pool that belongs to another object, with different labels."""
             group = self.same_image(idx)
             k = group.index(idx)
             own = object_key(self.grasp_files[idx])
@@ -209,7 +183,7 @@ def make_gpuaug_dataset_class(split_file: str | os.PathLike, mask_dir: str | Non
 
         def __getitem__(self, idx):
             x, y, didx, rot, zoom, *rest = super().__getitem__(idx)
-            x = x.to(torch.uint8)  # numpy_to_torch made it float32; values are the uint8 pixels
+            x = x.to(torch.uint8)
             if mask_dir is not None:
                 if self.has_object_mask(didx):
                     m = torch.from_numpy(np.load(object_mask_file(mask_dir, self.grasp_files[didx])).astype(np.float32))
@@ -227,9 +201,7 @@ def make_gpuaug_dataset_class(split_file: str | os.PathLike, mask_dir: str | Non
 
 
 def register(split_file: str | os.PathLike, crog: bool = False, text: str = "instruction") -> None:
-    """Make ``get_dataset(DATASET_NAME)`` (or ``CROG_DATASET_NAME`` with ``crog``) return the split-bound subclass;
-    every other name goes to the official function. Must run before the official script does
-    ``from utils.data import get_dataset``."""
+    """Make the official ``get_dataset`` return the subclass for ``DATASET_NAME``; call before the official script imports it."""
     refs.add_lgd_to_path()
     import utils.data as official
 

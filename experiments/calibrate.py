@@ -1,12 +1,3 @@
-"""Measure the two constants of GRAT before training: the pose prior and the OT weight.
-
-    pose prior   mean ground-truth (cos 2theta, sin 2theta, width) on the grasp pixels of the training stream as the network
-                 sees it, over N_PRIOR batches of 8 (1,600 images) -> grat.POSE_PRIOR
-    lambda       0.5 |g_flow| / |g_OT| at initialisation, averaged over N_BATCHES -> grat.LAMBDA
-
-Parameters (env): DATA_ROOT, SPLIT_LIST (default data_index/explore_train.txt), NETWORKS (default all three), N_PRIOR (200),
-N_BATCHES (10), CLIP_RN50, OUT_DIR. Writes calibration.json.
-"""
 from __future__ import annotations
 
 import dataclasses

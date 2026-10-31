@@ -1,19 +1,3 @@
-"""Extract only the needed members of a Grasp-Anything(++) zip into the layout the official loader reads.
-
-    python experiments/extract_annotations.py instructions <grasp_instructions.zip> <data_root>
-    python experiments/extract_annotations.py masks <mask.zip> <data_root>
-
-- instructions: one ``<scene>_<obj>_<part>.pkl`` per label file in
-  ``<data_root>/grasp-anything++/positive_grasp`` -> ``<data_root>/grasp-anything++/grasp_instructions/``; each one must
-  unpickle (no code) to a non-empty string.
-- masks (CROG training only): ``<scene>_<obj>.npy`` for the keys of the official ``train/seen.obj``
-  -> ``<data_root>/grasp-anything/mask/``. Validation and test never read masks.
-
-The archives hold 1.9M-4.4M members, so the central directory is streamed (``ziputil``), never listed in memory, and
-nothing else is unpacked. Files already present are kept (idempotent). Prints a JSON report. Instructions: exits 1
-if a label file has no instruction, raises if one fails the check. Masks: missing keys are only reported (423 labelled
-train keys have no mask in mask.zip).
-"""
 from __future__ import annotations
 
 import json
@@ -56,7 +40,7 @@ def extract(zip_path, wanted: set[str], ext: str, dest: Path, check=None) -> dic
 
 def main():
     if len(sys.argv) != 4 or sys.argv[1] not in ("instructions", "masks"):
-        sys.exit(__doc__)
+        sys.exit("usage: python experiments/extract_annotations.py instructions|masks <zip> <data_root>")
     kind, zip_path, root = sys.argv[1], sys.argv[2], Path(sys.argv[3])
     if kind == "instructions":
         labels = root / "grasp-anything++" / "positive_grasp"
@@ -67,7 +51,7 @@ def main():
         wanted = set(data.read_keys(refs.LGD / "split" / "grasp-anything++" / "train" / "seen.obj"))
         report = extract(zip_path, wanted, ".npy", root / "grasp-anything" / "mask")
     print(json.dumps({"kind": kind, "zip": str(zip_path), **report}, indent=1))
-    # masks: some train keys have no mask in mask.zip (those samples leave CROG's training sampler)
+    # some train keys have no mask; CROG's training leaves them out
     if kind == "instructions" and report["missing"]:
         sys.exit(1)
 

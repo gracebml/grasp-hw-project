@@ -1,7 +1,3 @@
-"""Image tiles of the architecture figure from the maps of run_example.py: input, relevance map r, grasp maps, grasp.
-
-    python visualization/make_tiles.py      ->  example/{image,r,q,grasp}.png
-"""
 import sys
 from pathlib import Path
 

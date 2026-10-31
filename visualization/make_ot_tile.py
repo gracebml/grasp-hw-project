@@ -1,9 +1,3 @@
-"""OT tile of the architecture figure, drawn on the real image: the mass softmax(pooled r / tau) of the relevance map, the
-target (the spoon's ground-truth mask), another object (the cup) and the flows doing the most transport work in the real
-Sinkhorn plans of lgdbench.ot. An illustration: training applies the loss to the predicted grasp map.
-
-    python visualization/make_ot_tile.py      ->  example/ot.png, example/ot_flows.tex
-"""
 import sys
 from pathlib import Path
 

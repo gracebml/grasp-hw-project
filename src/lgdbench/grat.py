@@ -1,16 +1,3 @@
-"""GRAT (Grounding as Transport): a rectified flow carries all four grasp maps (quality, cos 2theta, sin 2theta, width)
-from the instruction's CLIP relevance map r to the target.
-
-Source and path: x0 = [r, r p + (1 - r) b] (p: mean ground-truth pose on grasp pixels, b: label value outside grasps),
-x_t = (1 - t) x0 + t x1, plus Gaussian noise on x0 in training. The network regresses x1 - x0.
-Loss: mean over the channels of the squared velocity error, plus lambda times the OT terms (``lgdbench.ot``) on the one-step
-endpoint x_t + (1 - t) v. CROG keeps its mask loss.
-Inference: Euler steps from the noise-free x0; the four maps go to the pipeline's official decoder. Evaluation runs inside
-``compute_loss`` (eval mode), so the official ``evaluate.py`` and validation call it unchanged.
-
-GR-ConvNet and GG-CNN take (x_t, t) as extra input channels and their four heads predict the velocity. CROG's backbone takes
-exactly three channels, so an encoder of (x_t, t) is added to the four grasp slices of its projector.
-"""
 from __future__ import annotations
 
 import sys
@@ -29,9 +16,9 @@ from .crog_net import CROGGrasp  # noqa: E402
 from .fixed_models import GenerativeResnetNoDetach, LGGCNNNoDetach  # noqa: E402
 from .relevance import ClipRelevance, rgb_from_lgd  # noqa: E402
 
-BACKGROUND = (1.0, 0.0, 0.0)   # GT cos 2theta, sin 2theta, width outside the grasp rectangles (grasp_data.py:74-93)
-POSE_PRIOR = (0.013, -0.0001, 0.8804)   # mean GT (cos, sin, width) on grasp pixels, experiments/calibrate.py
-LAMBDA = {"lgrconvnet3": 20.0, "lggcnn": 305.0, "crog": 7.5}   # 0.5 |g_flow| / |g_OT| at initialisation, experiments/calibrate.py
+BACKGROUND = (1.0, 0.0, 0.0)   # label (cos 2theta, sin 2theta, width) outside grasps
+POSE_PRIOR = (0.013, -0.0001, 0.8804)   # experiments/calibrate.py
+LAMBDA = {"lgrconvnet3": 20.0, "lggcnn": 305.0, "crog": 7.5}   # experiments/calibrate.py
 CHANNELS = 3 + 4 + 1   # RGB, x_t, t
 
 
@@ -152,8 +139,7 @@ class GRATGGCNN(_DensePipeline, LGGCNNNoDetach):
 
 
 class GRATCROG(_Flow, CROGGrasp):
-    """GRAT on CROG: an encoder of (x_t, t) is added to the qua, sin, cos and wid slices of ``proj.vis`` (slice order mask, qua,
-    sin, cos, wid; ``model/layers.py:69-105``). The hook is a method of this module, so the network stays picklable."""
+    """GRAT on CROG: an encoder of (x_t, t) is added to the four grasp slices of the projector (a forward hook)."""
 
     def __init__(self, crog, word_len: int, cfg: Config):
         CROGGrasp.__init__(self, crog, word_len)
@@ -193,8 +179,8 @@ class GRATCROG(_Flow, CROGGrasp):
             t = torch.rand(xc.shape[0], 1, 1, 1, device=xc.device)
             xt = (1 - t) * x0 + t * y
             g = y - x0                        # velocity targets: pos, cos, sin, width
-            # CROG's mask BCE is kept; its four smooth-L1 grasp terms are replaced by the flow loss. CROG detaches its outputs
-            # (model/crog.py:76-111), so the live maps come from a temporary hook on ``crog.proj``.
+            # CROG's mask loss is kept, its grasp losses are replaced by the flow loss. CROG detaches its outputs, so the
+            # live maps come from a temporary hook.
             live = {}
             handle = self.crog.proj.register_forward_hook(lambda m, i, o: live.__setitem__("maps", o))
             try:  # argument order of CROG.forward: mask, qua, sin, cos, wid
@@ -230,8 +216,7 @@ class GRATCROG(_Flow, CROGGrasp):
 
 
 def accept_released_checkpoints() -> None:
-    """The released checkpoints pickle the module names of the development tree; map them to the classes above. Call before
-    ``torch.load``."""
+    """Map the module names pickled in the released checkpoints to the classes above; call before ``torch.load``."""
     package = types.ModuleType("lgdbench.ideas")
     package.__path__ = []
     flow, rel = types.ModuleType("lgdbench.ideas.r19_flowgeo"), types.ModuleType("lgdbench.ideas.r01_promptflow")

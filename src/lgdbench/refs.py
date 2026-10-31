@@ -1,8 +1,3 @@
-"""Single entry point for the official LGD code (read-only, never copied into ``src/``).
-
-Every reused piece (dataset class, training loop, metric) is imported through here, so the place where the original
-code enters the project is explicit.
-"""
 from __future__ import annotations
 
 import os
@@ -11,7 +6,6 @@ from contextlib import contextmanager
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-# Git submodules pinned at the commits below (.gitmodules); read-only, every change lives in src/lgdbench/.
 REF_ROOT = REPO_ROOT / "ref_sources"
 
 LGD = REF_ROOT / "LGD"
@@ -23,16 +17,14 @@ if sys.pycache_prefix is None:
 
 
 def require(path: Path) -> Path:
-    """Fail early with the fix when a submodule was not checked out (clone without --recursive leaves an empty
-    directory). Checks content, not ``.git``: the cluster copy is synced without it."""
+    """Fail early when the submodule was not checked out."""
     if not path.is_dir() or not any(path.iterdir()):
         raise FileNotFoundError(f"official code missing at {path}; run: git submodule update --init")
     return path
 
 
 def add_lgd_to_path() -> Path:
-    """Append (not prepend) LGD to ``sys.path``: its generic top-level names (``utils``, ``inference``) must not shadow
-    installed packages."""
+    """Append, not prepend: LGD's top-level names (``utils``, ``inference``) must not shadow installed packages."""
     require(LGD)
     p = str(LGD)
     if p not in sys.path:
@@ -42,7 +34,7 @@ def add_lgd_to_path() -> Path:
 
 @contextmanager
 def lgd_cwd():
-    """The official code opens ``split/...`` relative to the working directory, so run it from the LGD root."""
+    """Run from the LGD root: the official code opens ``split/...`` relative to the working directory."""
     require(LGD)
     old = os.getcwd()
     os.chdir(LGD)

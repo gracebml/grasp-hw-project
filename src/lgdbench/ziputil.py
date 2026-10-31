@@ -1,8 +1,3 @@
-"""Low-memory access to the Grasp-Anything(++) zip archives without extracting them.
-
-The archives hold 1M-4.4M tiny members. ``zipfile.ZipFile`` builds one ``ZipInfo`` per member (several GB of RAM;
-it was OOM-killed on this machine), so the central directory is streamed instead and only wanted members are kept.
-"""
 from __future__ import annotations
 
 import os

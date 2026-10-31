@@ -1,10 +1,3 @@
-"""Validation scoring on the GPU, used only to pick checkpoints during training.
-
-The official ``train_network.validate()`` scores one sample at a time on the CPU: ``post_process_output`` (skimage
-gaussian), ``detect_grasps`` (``peak_local_max``) and ``calculate_iou_match``. Here the first two run batched on the GPU,
-reproducing skimage 0.24 / scipy 1.10 step by step; the IoU test stays the official ``Grasp.max_iou`` on the CPU for the
-single top-1 grasp of each sample. Test evaluation keeps the official ``evaluate.py``.
-"""
 from __future__ import annotations
 
 import math
@@ -12,14 +5,11 @@ import math
 import torch
 import torch.nn.functional as F
 
-WIDTH_SCALE = 150.0  # inference/post_process.py:16 (decode as the official code)
+WIDTH_SCALE = 150.0  # as the official decoder
 
 
 def gaussian(x: torch.Tensor, sigma: float, truncate: float = 4.0) -> torch.Tensor:
-    """``skimage.filters.gaussian(x, sigma, preserve_range=True)`` for a B x H x W float32 batch.
-
-    skimage keeps float32 and calls ``ndi.gaussian_filter`` with mode 'nearest': a separable correlation along axis 0
-    and then axis 1, each pass computed in double and stored as float32."""
+    """``skimage.filters.gaussian(x, sigma, preserve_range=True)`` on a B x H x W batch: separable, mode 'nearest'."""
     radius = int(truncate * float(sigma) + 0.5)
     t = torch.arange(-radius, radius + 1, dtype=torch.float64, device=x.device)
     w = torch.exp(-0.5 * (t / sigma) ** 2)
@@ -39,9 +29,7 @@ def post_process(pos, cos, sin, width):
 
 
 def top_peak(q: torch.Tensor, min_distance: int = 20, threshold_abs: float = 0.2):
-    """``peak_local_max(q, min_distance, threshold_abs, num_peaks=1)`` per image (detect_grasps, grasp.py).
-
-    Returns ``found`` (B,) and ``rows``, ``cols`` (B,) of the highest peak."""
+    """``peak_local_max(q, min_distance, threshold_abs, num_peaks=1)`` per image: (found, rows, cols)."""
     k = 2 * min_distance + 1
     qmax = F.max_pool2d(q[:, None], k, stride=1, padding=min_distance)[:, 0]  # = maximum_filter, mode 'nearest'
     cand = q == qmax
@@ -65,7 +53,7 @@ def validate(net, device, val_data, iou_threshold):
 
     net.eval()
     results = {"correct": 0, "failed": 0, "loss": 0, "losses": {}}
-    n_total = len(val_data.loader.sampler)  # number of validation samples
+    n_total = len(val_data.loader.sampler)
     with torch.no_grad():
         for x, y, didx, rot, zoom, prompt, query in val_data:
             xc = x.to(device)
@@ -84,10 +72,10 @@ def validate(net, device, val_data, iou_threshold):
             for i in range(bs):
                 ok = False
                 if found[i]:
-                    g = Grasp((rows[i], cols[i]), a[i])  # detect_grasps: centre, angle, length = width, width = length / 2
+                    g = Grasp((rows[i], cols[i]), a[i])  # as detect_grasps
                     g.length = wd[i]
                     g.width = g.length / 2
                     gt = val_data.dataset.get_gtbb(int(didx[i]), float(rot[i]), float(zoom[i]))
-                    ok = g.max_iou(gt) > iou_threshold  # official IoU (calculate_iou_match, evaluation.py:76)
+                    ok = g.max_iou(gt) > iou_threshold
                 results["correct" if ok else "failed"] += 1
     return results

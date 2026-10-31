@@ -1,9 +1,3 @@
-"""CROG (Tziafas et al., CoRL 2023) behind the LGD model interface.
-
-The official ``model.crog.CROG`` runs unchanged; ``CROGGrasp`` only adapts its inputs and outputs to the
-``compute_loss(xc, yc, prompt, query)`` interface that the official LGD ``train()``, ``validate()`` and ``evaluate.py``
-call, so CROG is trained and scored by exactly the same loop and metric as the other baselines.
-"""
 from __future__ import annotations
 
 import sys
@@ -28,8 +22,7 @@ def _is_utils(name: str) -> bool:
 
 @contextmanager
 def _crog_on_path():
-    """CROG and LGD both ship a top-level ``utils`` package. While CROG modules import, ``utils`` resolves to CROG's;
-    afterwards LGD's ``utils`` modules are put back. Modules CROG imported keep their own references."""
+    """CROG and LGD both ship a top-level ``utils``: import CROG with its own, then put LGD's back."""
     saved = {k: sys.modules.pop(k) for k in [k for k in sys.modules if _is_utils(k)]}
     sys.path.insert(0, str(CROG))
     try:
@@ -43,8 +36,7 @@ def _crog_on_path():
 
 @lru_cache(maxsize=None)
 def import_crog() -> types.SimpleNamespace:
-    """The official CROG pieces used here. Leaves the CROG ``model`` package in ``sys.modules``, which is what
-    ``torch.load`` needs to unpickle a saved ``CROGGrasp``."""
+    """The official CROG pieces used here; also lets ``torch.load`` unpickle a saved ``CROGGrasp``."""
     refs.require(CROG)
     with _crog_on_path():
         import model as crog_model
@@ -55,13 +47,12 @@ def import_crog() -> types.SimpleNamespace:
 
 @lru_cache(maxsize=None)
 def word_len() -> int:
-    """CROG's text length (``crog_multiple_r50.yaml``: 17), for tokenising outside the model."""
+    """CROG's text length (17)."""
     return int(import_crog().load_cfg(str(CROG_CONFIG)).word_len)
 
 
 def load_config(clip_pretrain: str):
-    """``crog_multiple_r50.yaml`` (the OCID-VLG multiple-object setting) with the local path of RN50.pt and plain BN
-    (one GPU, no DDP)."""
+    """The official config, with the local RN50.pt and plain batch norm (one GPU)."""
     cfg = import_crog().load_cfg(str(CROG_CONFIG))
     cfg.clip_pretrain = clip_pretrain
     cfg.sync_bn = False
@@ -69,12 +60,7 @@ def load_config(clip_pretrain: str):
 
 
 class CROGGrasp(nn.Module):
-    """``model.crog.CROG`` with LGD's ``compute_loss`` interface.
-
-    Inputs: ``xc`` the CLIP-normalised 224x224 image (``data.make_crog_dataset_class``), ``query`` the text prompts (GA++ grasp instructions).
-    Targets ``yc`` = (pos, cos, sin, width[, object mask]) from the LGD dataset; the mask is only present in training.
-    Outputs: CROG's quality/cos/sin/width maps, bilinearly resized to the input size, as ``pred`` = pos/cos/sin/width.
-    """
+    """CROG with LGD's interface. Targets: (pos, cos, sin, width[, object mask in training]); maps resized to the input."""
 
     def __init__(self, crog: nn.Module, word_len: int):
         super().__init__()
@@ -90,7 +76,7 @@ class CROGGrasp(nn.Module):
         if self.training:
             if bool((yc[4] < 0).any()):
                 raise ValueError("training batch holds a sample without object mask (data.make_crog_dataset_class)")
-            # CROG.forward computes its own loss in training mode (model/crog.py:76-111); argument order: mask, qua, sin, cos, wid
+            # CROG computes its own loss in training mode; argument order: mask, qua, sin, cos, wid
             preds, _, loss, loss_dict = self.crog(xc, words, yc[4], y_pos, y_sin, y_cos, y_width)
             losses = {k: torch.as_tensor(float(v)) for k, v in loss_dict.items()}
         else:
@@ -100,7 +86,7 @@ class CROGGrasp(nn.Module):
         pred = {k: F.interpolate(v, size=size, mode="bilinear", align_corners=False)
                 for k, v in (("pos", qua), ("cos", cos), ("sin", sin), ("width", wid))}
         if not self.training:
-            # validation loss for logging only, CROG's grasp terms (smooth L1) on the resized maps
+            # for logging only
             losses = {f"m_{k}": F.smooth_l1_loss(pred[p], t)
                       for k, p, t in (("qua", "pos", y_pos), ("sin", "sin", y_sin), ("cos", "cos", y_cos),
                                       ("wid", "width", y_width))}
@@ -109,7 +95,7 @@ class CROGGrasp(nn.Module):
 
 
 def build(clip_pretrain: str):
-    """``(CROGGrasp, param_list)``: the official ``build_crog`` (backbone/head parameter groups, model/__init__.py)."""
+    """(network, CROG's parameter groups, config)."""
     cfg = load_config(clip_pretrain)
     crog, param_list = import_crog().build_crog(cfg)
     return CROGGrasp(crog, cfg.word_len), param_list, cfg

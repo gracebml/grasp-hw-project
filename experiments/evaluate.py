@@ -1,20 +1,3 @@
-"""Evaluate one checkpoint with the official ``evaluate.py`` on one key list.
-
-Parameters (env):
-    CKPT_DIR     training run dir (…/<timestamp>_<desc>/); the checkpoint of the epoch with the highest val IoU in the
-                 run's training log (correct/total, full precision; ties -> latest epoch) is used.
-                 Without a log, the IoU in the file name (official epoch_XX_iou_Y.YY, train_network.py:346), and a tie
-                 at the top of the file names stops with an error                                    (required)
-    VAL_LOG      optional: that training log; default: <CKPT_DIR>/log.log
-    SPLIT_LIST   test/seen.obj | test/unseen.obj | data_index/explore_{seen,unseen}.txt                 (required)
-    DATA_ROOT    as in train.py                                                                            (required)
-    MODEL        lgd (default: lgrconvnet3/lggcnn checkpoints) | crog (CLIP-normalised input, no mask)
-    TEXT         instruction (GA++ grasp instruction, default) | object (official object name); must match training
-    OUT_DIR      output dir (default outputs/local)
-
-Writes eval_<split>.json with the counts printed by the official script ("IOU Results: c/n = sr").
-Width is decoded x150 as in the official code.
-"""
 from __future__ import annotations
 
 import json
@@ -112,7 +95,7 @@ def main():
 
     crog = os.environ.get("MODEL", "lgd") == "crog"
     if crog:
-        crog_net.import_crog()  # torch.load needs CROG's `model` package to unpickle the checkpoint
+        crog_net.import_crog()  # to unpickle CROG checkpoints
     from lgdbench import grat
     grat.accept_released_checkpoints()
     text = os.environ.get("TEXT", "instruction")
@@ -124,7 +107,7 @@ def main():
                 "--add-file-path", str(data_root / "grasp-anything++"),
                 "--use-depth", "0",
                 "--iou-eval",
-                "--split", "0"]  # evaluate.py:37 defaults to 0.01, which drops the first 1%
+                "--split", "0"]  # the default 0.01 drops the first 1% of the test set
     with refs.lgd_cwd():
         lines = run_and_capture(refs.LGD / "evaluate.py")
 

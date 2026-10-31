@@ -1,9 +1,3 @@
-"""Run GG-CNN + GRAT on the example image and save its maps (CPU is enough).
-
-    CKPT=checkpoints/grat/lggcnn_s123/epoch_11_iou_0.42 python visualization/run_example.py   ->  example/maps.npz
-
-The checkpoint is the GG-CNN + GRAT run of seed 123 (README, Checkpoints).
-"""
 import os
 import sys
 from pathlib import Path

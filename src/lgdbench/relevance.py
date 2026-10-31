@@ -1,4 +1,3 @@
-"""Dense image-text relevance map r from a frozen CLIP model, MaskCLIP style (Zhou et al., ECCV 2022)."""
 from __future__ import annotations
 
 import torch
@@ -28,7 +27,7 @@ class ClipRelevance(nn.Module):
     def __init__(self, name: str = "ViT-B/16"):
         super().__init__()
         import clip
-        self.model, _ = clip.load(name, device="cpu", jit=False)  # fp32 on the CPU, moved with the network
+        self.model, _ = clip.load(name, device="cpu", jit=False)  # fp32
         self.model.eval()
         for p in self.model.parameters():
             p.requires_grad = False

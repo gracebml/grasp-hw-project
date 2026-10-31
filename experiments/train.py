@@ -1,25 +1,3 @@
-"""Train one method with the official LGD ``train()`` and GPU augmentation.
-
-Mirrors ``train_network.run()``: same 90/10 split without shuffling, logging format, checkpoint naming and saving rule
-(train_network.py:345), width decode x150. The image rotate/zoom/resize runs on the GPU (``lgdbench.gpuaug``) and so does the
-validation scoring (``lgdbench.gpuval``, checked equal to the official ``validate`` on all 2,863 validation samples).
-Validation images are not augmented.
-
-Parameters (env):
-    NETWORK      lgrconvnet3 | lggcnn | crog                                                            (required)
-    DATA_ROOT    folder with grasp-anything/ and grasp-anything++/ (README)                             (required)
-    GRAT         0 baseline (default) | 1 GRAT on that network
-    OT           1 with the OT loss (default) | 0 the ablation "w/o OT"; GRAT=1 only
-    SOURCE       relevance (default) | constant, the pose channels of x0 (the ablation); GRAT=1 only
-    LAMBDA       weight of the OT loss, default grat.LAMBDA of the network (experiments/calibrate.py)
-    SPLIT_LIST   default train/seen.obj
-    EPOCHS, BATCHES, BATCH_SIZE, VAL_BS, NUM_WORKERS, SEED   default 50, 1000, 8, 32, 3, 123
-    OUT_DIR      logs (default outputs/local); CKPT_ROOT checkpoints (default OUT_DIR)
-    CLIP_RN50    OpenAI RN50.pt, CROG only (default ~/.cache/clip/RN50.pt)
-    TEXT         instruction (default, GA++ grasp instruction) | object (official object name)
-    RESUME       1 (default) writes the training state after every epoch to <CKPT_ROOT>/resume/ and continues from it when the
-                 same command is launched again; a finished run renames it to .complete. 0 = no state written or read
-"""
 from __future__ import annotations
 
 import datetime
@@ -139,8 +117,8 @@ def main():
     split = int(np.floor(0.9 * dataset.length))
     indices = list(range(dataset.length))
     train_idx, val_idx = indices[:split], indices[split:]
-    dataset.split_pools = (set(train_idx), set(val_idx))  # the other object's labels never cross training and validation
-    # same samples as the official split, no rotation / zoom (as evaluate.py)
+    dataset.split_pools = (set(train_idx), set(val_idx))  # the other object stays within its split
+    # validation: no rotation or zoom, as evaluate.py
     val_dataset = Dataset(str(data_root / "grasp-anything"), output_size=224, ds_rotate=0.0, random_rotate=False,
                           random_zoom=False, include_depth=0, include_rgb=1, seen=1,
                           add_file_path=str(data_root / "grasp-anything++"))

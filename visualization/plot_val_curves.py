@@ -1,10 +1,3 @@
-"""Figure 2 of the paper: validation success per epoch on GR-ConvNet and GG-CNN, GRAT with and without the OT loss.
-
-    python visualization/plot_val_curves.py                 ->  example/val_curves.pdf (single column)
-    BASELINE=1 python visualization/plot_val_curves.py      ->  also draws the baselines
-
-data/val_curves.json: the validation line ("correct/2863 = success") of each run's training log, seeds 123 and 456.
-"""
 import json
 import os
 from pathlib import Path

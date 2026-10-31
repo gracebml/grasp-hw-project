@@ -1,12 +1,4 @@
-"""Official LGD baselines with the `.detach()` on the visual features removed.
-
-``inference/models/lgrconvnet3.py:83`` and ``inference/models/lggcnn.py:63`` do ``x = torch.clone(x).detach() + y_feats``,
-which stops every gradient to the image encoder; no pretrained weights are loaded anywhere in the released code, so the
-encoder stays at its random init. Each ``forward`` below is the official one verbatim except that line. The classes live at
-module level because ``train_network.py`` saves whole pickled models (``torch.save(net)``).
-
-The two ``forward`` methods are adapted from LGD, Copyright (c) 2024 An Vuong, MIT License (THIRD_PARTY_NOTICES.md).
-"""
+# Adapted from LGD, Copyright (c) 2024 An Vuong, MIT License (THIRD_PARTY_NOTICES.md).
 import torch.nn.functional as F
 
 from . import refs
@@ -27,14 +19,12 @@ class GenerativeResnetNoDetach(GenerativeResnet):
         x = self.res4(x)
         x = self.res5(x)
 
-        # Encode text
         device = x.device
         y_feats = self._encode_text(query, device=device)
         y_feats = self.y_flatten(y_feats)
         y_feats = y_feats.unsqueeze(2).expand(-1, -1, 56).unsqueeze(1).expand(-1, 128, -1, -1)
 
-        # Combine textual features with the visual features (official :83 detaches x here; removed here)
-        x = x + y_feats
+        x = x + y_feats  # the official code detaches x here
 
         x = F.relu(self.bn4(self.conv4(x)))
         x = F.relu(self.bn5(self.conv5(x)))
@@ -60,14 +50,12 @@ class LGGCNNNoDetach(LGGCNN):
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
 
-        # Encode text
         device = x.device
         y_feats = self._encode_text(query, device=device)
         y_feats = self.y_flatten(y_feats)
         y_feats = y_feats.unsqueeze(2).expand(-1, -1, 19).unsqueeze(1).expand(-1, 8, -1, -1)
 
-        # Combine textual features with the visual features (official :63 detaches x here; removed here)
-        x = x + y_feats
+        x = x + y_feats  # the official code detaches x here
 
         x = F.relu(self.convt1(x))
         x = F.relu(self.convt2(x))

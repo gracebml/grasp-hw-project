@@ -1,12 +1,3 @@
-"""Build the split-only data directory the official loader reads.
-
-    python experiments/make_split_subset.py <full_root> <subset_root>
-
-<full_root> holds grasp-anything/{image,prompt} and grasp-anything++/positive_grasp (official layout). The subset keeps
-only files whose ``<scene>_<obj>`` key is in the official train/seen, test/seen or test/unseen lists (hardlinks, no
-copy) and writes subset_report.json: per split, keys with/without grasp files, missing images/prompts, and file names
-the official image regex ``_\\d{1}_\\d{1}\\.pt`` (grasp_anywhere_data.py:97) cannot map.
-"""
 from __future__ import annotations
 
 import json

@@ -1,11 +1,3 @@
-"""Cut the fixed explore subset from the official train split.
-
-Runs on the local machine (CPU) straight from the raw zips:
-    RAW=data/raw OUT=data_index python experiments/build_explore_index.py
-
-Writes ``explore_{train,seen,unseen}.txt`` (``<scene>_<obj>`` keys), ``explore_meta.json`` and ``CHECKSUMS.tsv``.
-Generated once; the files are committed and never edited.
-"""
 from __future__ import annotations
 
 import hashlib

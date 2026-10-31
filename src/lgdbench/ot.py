@@ -1,5 +1,3 @@
-"""Optimal-transport loss of GRAT: W+ pulls the predicted grasp mass to the instruction's grasps, W- keeps a margin to
-another object's grasps. Both are Sinkhorn distances on a 28 x 28 grid."""
 from __future__ import annotations
 
 import torch

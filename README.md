@@ -92,6 +92,28 @@ DATA_ROOT=/path/to/data python experiments/calibrate.py
 
 </details>
 
+<details>
+<summary><b>All parameters</b></summary>
+
+<br>
+
+| Script | Parameter | Default |
+|:---|:---|:---|
+| `train.py` | `NETWORK` (required): `lgrconvnet3` \| `lggcnn` \| `crog` · `DATA_ROOT` (required) | |
+| | `GRAT`: 1 = GRAT, 0 = baseline · `OT`: 0 = without the OT loss · `SOURCE`: `relevance` \| `constant` | `0` · `1` · `relevance` |
+| | `LAMBDA`: weight of the OT loss | value in `grat.LAMBDA` |
+| | `EPOCHS` · `BATCHES` per epoch · `BATCH_SIZE` · `VAL_BS` · `NUM_WORKERS` · `SEED` | `50` · `1000` · `8` · `32` · `3` · `123` |
+| | `SPLIT_LIST` · `TEXT`: `instruction` \| `object` | `train/seen.obj` · `instruction` |
+| | `OUT_DIR` (logs) · `CKPT_ROOT` (checkpoints) · `CLIP_RN50` (CROG only) | `outputs/local` · `OUT_DIR` · `~/.cache/clip/RN50.pt` |
+| | `RESUME`: continue an interrupted run | `1` |
+| `evaluate.py` | `CKPT_DIR`, `SPLIT_LIST`, `DATA_ROOT` (required) · `MODEL`: `lgd` \| `crog` | `lgd` |
+| | `VAL_LOG` · `TEXT` · `OUT_DIR` | `<CKPT_DIR>/log.log` · `instruction` · `outputs/local` |
+| `calibrate.py` | `DATA_ROOT` (required) · `NETWORKS` · `N_PRIOR` · `N_BATCHES` | all three · `200` · `10` |
+
+For a quick check, train with `EPOCHS=1 BATCHES=50`.
+
+</details>
+
 ## Checkpoints
 
 The checkpoints behind the paper, one per seed at the epoch with the best validation success, are on
