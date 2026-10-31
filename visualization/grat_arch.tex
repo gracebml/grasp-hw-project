@@ -1,0 +1,121 @@
+% GRAT architecture (Figure 1 of the paper), single CVPR column, drawn at true size.
+% The tiles in example/ are real outputs of GG-CNN + GRAT (seed 123) on one Grasp-Anything image; the OT tile is an
+% illustration. Build from visualization/:  xelatex grat_arch.tex   (needs the Inter font)
+\documentclass[tikz,border=0pt]{standalone}
+\usepackage{mathspec}
+\setmainfont{Inter}[UprightFont=* Medium,BoldFont=* SemiBold,ItalicFont=* Italic]
+\setsansfont{Inter}
+\setmathsfont(Digits,Latin,Greek)[Uppercase=Regular,Lowercase=Regular]{Inter Italic}
+\setmathrm{Inter}
+\usetikzlibrary{positioning,calc,fit,arrows.meta,bending,shapes.misc}
+\pgfdeclarelayer{back}\pgfsetlayers{back,main}
+% Ocean palette (after theme-factory Ocean Depths): flow navy to teal, warm = relevance map r, target and other object
+\definecolor{ink}{HTML}{1A2332}\definecolor{mute}{HTML}{5B6B7A}\definecolor{hair}{HTML}{C9D6D8}\definecolor{wash}{HTML}{F7FAF8}
+\definecolor{flowA}{HTML}{1A3A4A}\definecolor{flowB}{HTML}{2D8B8B}\definecolor{warm}{HTML}{C2562E}\definecolor{warmbg}{HTML}{FBEFE8}
+\definecolor{target}{HTML}{2F7D5B}\definecolor{targetbg}{HTML}{F1FAEE}\definecolor{other}{HTML}{C0604A}\definecolor{flowbg}{HTML}{E4F2F2}
+\colorlet{flowAbg}{flowbg}
+\graphicspath{{example/}}
+\input{example/ot_flows.tex}
+\def\T{1.08cm}\def\O{0.78cm}\def\G{0.2cm}\def\S{0.05}\def\RR{2.6pt}
+\newcommand{\fs}{\fontsize{6.1}{7.2}\selectfont}
+\newcommand{\fss}{\fontsize{5.1}{6}\selectfont}
+\tikzset{
+  every node/.style={font=\fs, inner sep=0pt, text=ink},
+  go/.style={-{Stealth[round,inset=.9pt,length=3.6pt,width=3.1pt]}, line width=.6pt, mute, shorten >=1pt, shorten <=1pt},
+  flowgo/.style={go, flowA, line width=.75pt},
+  pull/.style={-{Stealth[round,inset=.9pt,length=3.3pt,width=2.9pt]}, line width=.7pt, target},
+  push/.style={-{Stealth[round,inset=.9pt,length=3.3pt,width=2.9pt]}, line width=.7pt, other, dash pattern=on 1.8pt off 1.3pt},
+  chip/.style={rounded rectangle, fill=#1bg, text=#1, font=\fss\bfseries, inner xsep=4.2pt, inner ysep=1.7pt},
+  lab/.style={below=2pt, align=center, text=ink},
+}
+% soft shadow: stacked translucent rounded rectangles
+\newcommand{\softshadow}[2]{\foreach \k in {1,...,5}{\fill[ink, opacity=.035, rounded corners=\RR+\k*.3pt]
+  ($(#1.south west)+(-\k*.28pt,-\k*.42pt)$) rectangle ($(#2.north east)+(\k*.28pt,\k*.1pt)$);}}
+% rounded image tile; #1 extra node options, #2 name, #3 file, #4 size
+\newcommand{\tile}[4][]{%
+  \node[minimum size=#4, #1] (#2) {};
+  \softshadow{#2}{#2}
+  \begin{scope}\clip[rounded corners=\RR] (#2.south west) rectangle (#2.north east);
+    \node at (#2) {\includegraphics[width=#4,height=#4]{#3}};\end{scope}
+  \draw[white, line width=.55pt, rounded corners=\RR] (#2.south west) rectangle (#2.north east);}
+\newcommand{\stacktile}[4][]{%
+  \node[minimum size=#4, #1] (#2) {};
+  \foreach \i in {3,2,1}{%
+    \draw[draw=hair, line width=.35pt, fill=white, rounded corners=\RR]
+      ($(#2.south west)+(\i*\S,\i*\S)$) rectangle ($(#2.north east)+(\i*\S,\i*\S)$);}
+  \softshadow{#2}{#2}
+  \begin{scope}\clip[rounded corners=\RR] (#2.south west) rectangle (#2.north east);
+    \node at (#2) {\includegraphics[width=#4,height=#4]{#3}};\end{scope}
+  \draw[white, line width=.55pt, rounded corners=\RR] (#2.south west) rectangle (#2.north east);}
+\begin{document}
+\begin{tikzpicture}
+  \tile{I}{image}{\T}
+  \node[below=2pt of I.south, anchor=north, align=center] (Ilab)
+    {Image $I$\\[-.4pt]{\fss\itshape\color{mute}Lift spoon by}\\[-1.6pt]{\fss\itshape\color{mute}its handle.}};
+
+  \node[right=\G of I, minimum width=.68cm, minimum height=.72cm] (clip) {};
+  \softshadow{clip}{clip}
+  \fill[white, rounded corners=3pt] (clip.south west) rectangle (clip.north east);
+  \draw[hair, line width=.4pt, rounded corners=3pt] (clip.south west) rectangle (clip.north east);
+  \node[anchor=north, font=\fs\bfseries] at ($(clip.north)+(0,-.075)$) {CLIP};
+  \begin{scope}[shift={($(clip.center)+(0,-.055)$)}]
+    \foreach \a in {30,90,...,330}{
+      \draw[flowB, line width=.42pt, line cap=round] (0,0) -- (\a:.1);
+      \draw[flowB, line width=.3pt, line cap=round] (\a:.065) -- ++(\a+40:.03) (\a:.065) -- ++(\a-40:.03);}
+  \end{scope}
+  \node[anchor=south, font=\fss, text=mute] at ($(clip.south)+(0,.03)$) {frozen};
+  \draw[go] (I.east) -- (clip.west);
+
+  \stacktile[right=\G+.08cm of clip]{x0}{r}{\T}
+  \node[lab] at (x0.south) {Source $x_0$};
+  \draw[go] (clip.east) -- node[above=.8pt, font=\fss] {$r$} (x0.west);
+
+    % rounded gradient arrow
+    \node[right=\G+.1cm of x0, minimum width=1.82cm, minimum height=.54cm] (flow) {};
+    \shade[left color=flowA, right color=flowB, rounded corners=2.2pt]
+      (flow.north west) -- ($(flow.north east)+(-.28,0)$) -- ($(flow.north east)+(-.28,.12)$)
+      [rounded corners=1.4pt] -- ($(flow.east)+(.03,0)$) -- ($(flow.south east)+(-.28,-.12)$)
+      [rounded corners=2.2pt] -- ($(flow.south east)+(-.28,0)$) -- (flow.south west) -- cycle;
+    \coordinate (ftxtc) at ($(flow.center)+(-.13,0)$);
+  \node[align=center, text=white, font=\fss\bfseries] (ftxt) at (ftxtc)
+    {Rectified flow\\[-.3pt]{\fs\mdseries\color{white}$v_\theta(x_t,t\,|\,I,e)$}};
+  \node[font=\fss, text=mute, anchor=north] (euler) at ($(flow.south)+(-.3,-.1)$) {8 Euler steps};
+
+    \stacktile[right=\G-.04cm of flow]{x1}{q}{\T}
+  \node[lab] at (x1.south) {Grasp maps};
+
+  \tile[right=\G+.1cm of x1]{g}{grasp}{\T}
+  \node[lab] at (g.south) {Grasp};
+  \draw[go] ($(x1.east)+(3*\S,0)$) -- (g.west);
+
+  \coordinate (pa) at ($(clip.west |- x0.north)!.5!(x0.north east)+(.03,.2)$);
+  \node[chip=warm, anchor=south] (p1) at (pa) {Start from the prompt's guess};
+  \coordinate (pm) at ($(flow.west)!.5!(x1.east)$);
+  \node[chip=flowA, anchor=south, fill=flowbg] (p2) at (pm |- pa) {Carry the whole grasp};
+
+  \node[anchor=north west, minimum size=\O] (ot) at ($(clip.west |- x0.south)+(.09,-.43)$) {};
+  \coordinate (leg) at ($(ot.east)+(.16,0)$);
+  \node[anchor=west, font=\fss\bfseries, text=target] (p3) at ($(leg)+(0,.245)$) {Score arrival by transport cost};
+  \draw[pull] ($(leg)+(0,.03)$) -- ++(.27,0)
+    node[right=2.4pt, anchor=west, text=ink] (w1) {$W^{+}$ pulls $\hat q$ to the target's grasps};
+  \draw[push] ($(leg)+(0,-.21)$) -- ++(.27,0)
+    node[right=2.4pt, anchor=west, text=ink] (w2) {$W^{-}$ keeps a margin to another object};
+  \coordinate (panelr) at (g.east |- ot.south);
+  \begin{pgfonlayer}{back}
+    \node[fit=(ot)(panelr), inner sep=.085cm, fill=targetbg, rounded corners=4pt] (panel) {};
+  \end{pgfonlayer}
+  \tile[anchor=north west, at={($(clip.west |- x0.south)+(.09,-.43)$)}]{ot}{ot}{\O}
+  % real Sinkhorn plans on the real image (make_ot_tile.py): flows with the most transport work
+  \begin{scope}[shift={(ot.north west)}, x=\O, y=-\O]
+    \foreach \xa/\ya/\xb/\yb/\w in \flowsneg {
+      \draw[white, line width=1.5pt, line cap=round] (\xa,\ya) to[bend left=12] (\xb,\yb);
+      \draw[push, -{Stealth[round,inset=.6pt,length=2.4pt,width=2.2pt]}, line width=.35pt+.25pt*\w] (\xa,\ya) to[bend left=12] (\xb,\yb);}
+    \foreach \xa/\ya/\xb/\yb/\w in \flowspos {
+      \draw[white, line width=1.5pt, line cap=round] (\xa,\ya) to[bend right=15] (\xb,\yb);
+      \draw[pull, -{Stealth[round,inset=.6pt,length=2.4pt,width=2.2pt]}, line width=.35pt+.3pt*\w] (\xa,\ya) to[bend right=15] (\xb,\yb);}
+  \end{scope}
+  \coordinate (d) at ($(flow.center)+(.58,0)$);
+  \draw[go, dash pattern=on 1.8pt off 1.3pt] (d |- flow.south) ++(0,-.02) -- (d |- panel.north)
+    node[pos=.45, right=1.8pt, font=\fss, text=mute] {train};
+\end{tikzpicture}
+\end{document}

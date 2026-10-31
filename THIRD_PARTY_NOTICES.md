@@ -36,4 +36,5 @@ files. Each keeps its own MIT license in its own repository.
 
 ## Data
 
-The example image in `assets/grat_arch.png` comes from the [Grasp-Anything](https://airvlab.github.io/grasp-anything/) dataset (MIT).
+The example image in `assets/grat_arch.png` and `visualization/` (`data/example_image.png`, `data/example_mask.png` and the tiles
+built from them) comes from the [Grasp-Anything](https://airvlab.github.io/grasp-anything/) dataset (MIT).

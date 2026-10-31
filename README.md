@@ -129,9 +129,15 @@ table, and 667/1376 on a V100, with the same code.
 ├── experiments/    train, evaluate, calibrate, data preparation
 ├── tests/          unit tests
 ├── data_index/     fixed key lists of the internal explore subset, cut from train/seen.obj
+├── visualization/  the paper's figures, rebuilt from their data
 ├── ref_sources/    official LGD and CROG code (git submodules, read-only)
 └── assets/         figures of this page
 ```
+
+## Figures
+
+[`visualization/`](visualization/) rebuilds both figures of the paper: the architecture figure from real outputs of the network
+(TikZ), and the validation curves (matplotlib). See its [README](visualization/README.md).
 
 ## Setup
 
