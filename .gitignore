@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.pycache/
+*.egg-info/
+.pytest_cache/
+
+# Data and results stay out of git (CLAUDE.md)
+data/
+outputs/
+
+# Secrets
+.env
+env.sh
+*.token
+
+# LaTeX build
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+
+# Assignment brief (course material, not ours to publish)
+/*.pdf
+
+
+# Figure skills uploaded by the user (60 MB, nested git repos)
+tikz-skills/
+
+# Session notes and working material, kept on the local machine only
+sessions/
+docs/
+research/
+.claude/
+CLAUDE.md
+run.md
+*.ovpn
+
+# Trained checkpoints (Google Drive, see README)
+checkpoints/
+
+# Paper sources (the PDF is submitted separately)
+paper/

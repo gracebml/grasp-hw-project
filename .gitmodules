@@ -1,0 +1,6 @@
+[submodule "ref_sources/LGD"]
+	path = ref_sources/LGD
+	url = https://github.com/Fsoft-AIC/LGD
+[submodule "ref_sources/CROG"]
+	path = ref_sources/CROG
+	url = https://github.com/HilbertXu/CROG

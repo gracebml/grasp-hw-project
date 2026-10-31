@@ -1,0 +1,75 @@
+{
+ "source_split": "LGD split/grasp-anything++/train/seen.obj",
+ "lgd_commit": "501904dc5c30c8fad58d90f7e4f49b4095f11eb0",
+ "seed": 0,
+ "unseen_name_fraction": 0.3,
+ "target_prompts": {
+  "train": 4000,
+  "seen": 500,
+  "unseen": 500
+ },
+ "train_keys_total": 14516,
+ "train_keys_with_name_and_prompts": 10130,
+ "object_names_total": 130,
+ "unseen_names": [
+  "bird",
+  "block",
+  "book",
+  "cane",
+  "cardholder",
+  "comb",
+  "cup",
+  "dice",
+  "earbud",
+  "earphone",
+  "earphones",
+  "flower",
+  "glasses",
+  "jar",
+  "lid",
+  "lighter",
+  "lime",
+  "lock",
+  "marble",
+  "match",
+  "mouse",
+  "necklace",
+  "notepad",
+  "oil",
+  "pencil",
+  "plant",
+  "purse",
+  "rose",
+  "rubberband",
+  "safety",
+  "screw",
+  "silverware",
+  "smartphone",
+  "sunglasses",
+  "teabag",
+  "tissue",
+  "tube",
+  "whisk",
+  "wooden"
+ ],
+ "counts": {
+  "train": {
+   "objects": 1412,
+   "prompts": 4000,
+   "scenes": 1221,
+   "names": 69
+  },
+  "seen": {
+   "objects": 180,
+   "prompts": 502,
+   "scenes": 162,
+   "names": 36
+  },
+  "unseen": {
+   "objects": 184,
+   "prompts": 501,
+   "scenes": 184,
+   "names": 21
+  }
+ }
+}
