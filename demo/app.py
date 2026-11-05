@@ -246,7 +246,7 @@ if res.grasps:
     grasp_table(res)
 else:
     st.warning(f"No grasp. The highest quality is {res.best[5]:.2f}, below the {P.THRESHOLD} threshold of LGD's detector, "
-               "so the official metric counts this sample as a failure. The grey dashed rectangle only shows where that "
+               "so the official metric counts this sample as a failure. The dashed rectangle only shows where that "
                "highest quality lies. Try an instruction written like those of Grasp-Anything++, such as “Grasp the cup "
                "by its handle.”, or another seed or pipeline.")
 
