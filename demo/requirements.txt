@@ -1,0 +1,23 @@
+# CPU environment of the demo. The official LGD code uses np.int / np.float, hence numpy < 1.24.
+# Install: pip install "setuptools<70" wheel && pip install --no-build-isolation -r demo/requirements.txt
+# (CLIP's setup.py needs pkg_resources.)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
+numpy==1.23.5
+scipy==1.10.1
+scikit-image==0.21.0
+opencv-python-headless==4.8.1.78
+matplotlib==3.7.5
+Pillow==10.4.0
+ftfy==6.1.1
+regex==2023.8.8
+clip @ git+https://github.com/openai/CLIP.git@a1d071733d7111c9c014f024669f959182114e33
+# CROG
+loguru==0.7.0
+lmdb==1.4.1
+shapely==2.0.1
+PyYAML
+# app
+streamlit==1.39.0
+pytest
