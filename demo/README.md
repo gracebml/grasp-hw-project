@@ -33,18 +33,10 @@ The checkpoints are read from `checkpoints/{baseline,grat}/<network>_s<seed>/` (
 | `app.py` | the page |
 | `tests/test_pipeline.py` | preprocessing, checkpoint list; with a checkpoint: the maps of `visualization/example/maps.npz` are reproduced, and the unrolled steps end at GRAT's own `compute_loss` |
 | `.streamlit/config.toml` | theme; the server listens on localhost only |
-| `space/` | Dockerfile, start-up script and card of the Hugging Face Space |
 
 ```bash
 python -m pytest demo/tests
 ```
-
-## Deploy (Hugging Face Space)
-
-`space/` holds a Docker Space: the image clones this repository at a pinned commit with its submodules and installs
-`requirements.txt`; at start-up, `entrypoint.sh` downloads the checkpoints from a Hugging Face model repository
-(`CKPT_REPO`, laid out as `baseline/` and `grat/` above) and serves the page on port 7860. The deployed Space offers the
-seed-123 checkpoints.
 
 ## Notes
 
